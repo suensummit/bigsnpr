@@ -135,9 +135,12 @@ snp_attach <- function(rdsfile) {
   assert_exist(bkfile <- sub("\\.rds$", ".bk", rdsfile))
 
   snp.list <- readRDS(rdsfile)
-  snp.list$genotypes$backingfile <- bkfile  # in case of moving files
-  snp.list$genotypes <- bigstatsr:::reconstruct_if_old(
+
+  snp.list$genotypes <- rmio::reconstruct_if_old(
     snp.list$genotypes, msg2 = "You should use `snp_save()`.")
+
+  snp.list$genotypes$backingfile <- bkfile  # in case of moving files
+
   snp.list
 }
 
