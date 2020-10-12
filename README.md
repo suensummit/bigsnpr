@@ -24,7 +24,7 @@ In R, run
 
 ```r
 # install.packages("remotes")
-remotes::install_github("privefl/bigsnpr")
+remotes::install_github(repo = "suensummit/bigsnpr", ref = "dev")
 ```
 
 
