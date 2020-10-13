@@ -151,9 +151,13 @@ snp_fastImpute <- function(Gna, infos.chr,
   infos.imp <- FBM_infos(Gna)
 
   ind.chrs <- split(seq_along(infos.chr), infos.chr)
-  for (ind in ind.chrs) {
-    imputeChr(X, X2, infos.imp, ind, alpha, size, p.train, n.cor, seed, ncores)
-  }
+  cl <- parallel::makeCluster(NCORES)
+  parallel::clusterExport(cl=cl, varlist=c("X", "X2", "infos.imp", "alpha", "size", "p.train", "n.cor", "seed", "ncores", ".Random.seed"), envir=environment())
+  parallel::parLapply(cl, ind.chrs, function(ind) bigsnpr:::imputeChr(X, X2, infos.imp, ind, alpha, size, p.train, n.cor, seed, ncores))
+  parallel::stopCluster(cl)
+#  for (ind in ind.chrs) {
+#    imputeChr(X, X2, infos.imp, ind, alpha, size, p.train, n.cor, seed, ncores)
+#  }
 
   infos.imp
 }
