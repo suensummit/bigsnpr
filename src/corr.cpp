@@ -35,7 +35,7 @@ List corMat(Environment BM,
     std::vector<int>    ind; ind.reserve(m);
     std::vector<double> val; val.reserve(m);
 
-    #pragma omp for schedule(dynamic, chunk_size) num_threads(ncores)
+    #pragma omp for schedule(dynamic, chunk_size)
     for (int j0 = 0; j0 < m; j0++) {
 
       ind.clear();
