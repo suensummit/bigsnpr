@@ -54,7 +54,14 @@ snp_readBGI <- function(bgifile, snp_id) {
 #'
 #' This function is designed to read UK Biobank imputation files. This assumes
 #' that variants have been compressed with zlib, that there are only 2 possible
-#' alleles, and that each probability is stored on 8 bits.
+#' alleles, and that each probability is stored on 8 bits. For example, if you
+#' use *qctool* to generate your own BGEN files, please make sure you are using
+#' options '`-ofiletype bgen_v1.2 -bgen-bits 8`'.
+#'
+#' You can look at some example code from my papers on how to use this function:
+#' - https://github.com/privefl/paper-ldpred2/blob/master/code/prepare-genotypes.R#L1-L62
+#' - https://github.com/privefl/paper4-bedpca/blob/master/code/missing-values-UKBB.R#L34-L75
+#' - https://github.com/privefl/UKBiobank/blob/master/10-get-dosages.R
 #'
 #' @param bgenfiles Character vector of paths to files with extension ".bgen".
 #'   The corresponding ".bgen.bgi" index files must exist.
@@ -82,10 +89,6 @@ snp_readBGI <- function(bgifile, snp_id) {
 #' [snp_attach] to load the "bigSNP" object in any R session from backing files.
 #'
 #' @importFrom magrittr %>%
-#' @import foreach
-#'
-#' @examples
-#' # See e.g. https://github.com/privefl/UKBiobank/blob/master/10-get-dosages.R
 #'
 #' @export
 snp_readBGEN <- function(bgenfiles, backingfile, list_snp_id,
@@ -113,11 +116,10 @@ snp_readBGEN <- function(bgenfiles, backingfile, list_snp_id,
   sizes <- lengths(list_snp_id)
 
   # Samples
-  if (is.null(ind_row)) {
-    N <- readBin(bgenfiles[1], what = 1L, size = 4, n = 4)[4]
-    ind_row <- seq_len(N)
-  }
+  N <- readBin(bgenfiles[1], what = 1L, size = 4, n = 4)[4]
+  if (is.null(ind_row)) ind_row <- seq_len(N)
   assert_nona(ind_row)
+  stopifnot(all(ind_row >= 1 & ind_row <= N))
 
   # Prepare Filebacked Big Matrix
   G <- FBM.code256(
@@ -133,7 +135,7 @@ snp_readBGEN <- function(bgenfiles, backingfile, list_snp_id,
   snp.info <- tryCatch(error = function(e) { unlink(G$backingfile); stop(e) }, {
 
     # Fill the FBM from BGEN files (and get SNP info)
-    foreach(ic = seq_along(bgenfiles), .combine = 'rbind') %do% {
+    do.call("rbind", lapply(seq_along(bgenfiles), function(ic) {
 
       snp_id <- format_snp_id(list_snp_id[[ic]])
       infos <- snp_readBGI(bgifiles[ic], snp_id)
@@ -155,7 +157,7 @@ snp_readBGEN <- function(bgenfiles, backingfile, list_snp_id,
       dplyr::bind_cols(infos, marker.ID = ID) %>%
         dplyr::select(chromosome, marker.ID, rsid, physical.pos = position,
                       allele1, allele2)
-    }
+    }))
   })
 
   # Create the bigSNP object
